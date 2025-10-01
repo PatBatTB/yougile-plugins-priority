@@ -8,6 +8,7 @@ import io.github.patbattb.yougileapilib.domain.QueryParams;
 import io.github.patbattb.yougileapilib.domain.Task;
 import io.github.patbattb.yougileapilib.domain.body.TaskUpdateBody;
 import io.github.patbattb.yougileapilib.service.TaskService;
+import org.apache.http.client.ClientProtocolException;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -63,7 +64,7 @@ public class RequestSender implements AutoCloseable {
                 executorService.submit(this::waitPause);
                 return taskService.getTaskById(taskId);
             }
-        } catch (InterruptedException e) {
+        } catch (InterruptedException | ClientProtocolException e) {
             throw new PluginInterruptedException("Getting task by id was interrupted." ,e);
         } catch (URISyntaxException | IOException e) {
             throw new PluginCriticalException("Error during getting task by id", e);
