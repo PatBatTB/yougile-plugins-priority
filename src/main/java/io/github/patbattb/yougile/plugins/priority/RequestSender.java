@@ -78,7 +78,7 @@ public class RequestSender implements AutoCloseable {
                 executorService.submit(this::waitPause);
                 return taskService.getTaskList(qParams);
             }
-        } catch (InterruptedException e) {
+        } catch (InterruptedException | ClientProtocolException e) {
             throw new PluginInterruptedException("Getting tasks was interrupted." ,e);
         } catch (URISyntaxException | IOException e) {
             throw new PluginCriticalException("Error during getting tasks", e);
@@ -92,7 +92,7 @@ public class RequestSender implements AutoCloseable {
                 executorService.submit(this::waitPause);
                 taskService.updateTask(taskId, body);
             }
-        } catch (InterruptedException e) {
+        } catch (InterruptedException | ClientProtocolException e) {
             throw new PluginInterruptedException("Getting tasks was interrupted." ,e);
         } catch (URISyntaxException | IOException e) {
             throw new PluginCriticalException("Error during getting tasks", e);

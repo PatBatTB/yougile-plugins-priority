@@ -1,0 +1,24 @@
+{
+  "token": "bot token",
+  "requestFrequency": 20,
+  "priorityStickerId": "id of priority sticker",
+  "delayedState": "state id of delayed tasks",
+  "columnIds": [
+    "column id one",
+    "column id two"
+  ],
+  "priorityOrder": [
+    {
+      "stateId": "state id of priority",
+      "order": 1
+    },
+    {
+      "stateId": "state id of priority",
+      "order": 2
+    },
+    {
+      "stateId": "state id of priority",
+      "order": 3
+    }
+  ]
+}
