@@ -9,6 +9,7 @@ import io.github.patbattb.yougileapilib.domain.Task;
 import io.github.patbattb.yougileapilib.domain.body.TaskUpdateBody;
 import io.github.patbattb.yougileapilib.service.TaskService;
 import org.apache.http.client.ClientProtocolException;
+import org.apache.http.conn.ConnectTimeoutException;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -64,7 +65,7 @@ public class RequestSender implements AutoCloseable {
                 executorService.submit(this::waitPause);
                 return taskService.getTaskById(taskId);
             }
-        } catch (InterruptedException | ClientProtocolException e) {
+        } catch (InterruptedException | ClientProtocolException | ConnectTimeoutException e) {
             throw new PluginInterruptedException("Getting task by id was interrupted." ,e);
         } catch (URISyntaxException | IOException e) {
             throw new PluginCriticalException("Error during getting task by id", e);
@@ -78,7 +79,7 @@ public class RequestSender implements AutoCloseable {
                 executorService.submit(this::waitPause);
                 return taskService.getTaskList(qParams);
             }
-        } catch (InterruptedException | ClientProtocolException e) {
+        } catch (InterruptedException | ClientProtocolException | ConnectTimeoutException e) {
             throw new PluginInterruptedException("Getting tasks was interrupted." ,e);
         } catch (URISyntaxException | IOException e) {
             throw new PluginCriticalException("Error during getting tasks", e);
@@ -92,7 +93,7 @@ public class RequestSender implements AutoCloseable {
                 executorService.submit(this::waitPause);
                 taskService.updateTask(taskId, body);
             }
-        } catch (InterruptedException | ClientProtocolException e) {
+        } catch (InterruptedException | ClientProtocolException | ConnectTimeoutException e) {
             throw new PluginInterruptedException("Getting tasks was interrupted." ,e);
         } catch (URISyntaxException | IOException e) {
             throw new PluginCriticalException("Error during getting tasks", e);
