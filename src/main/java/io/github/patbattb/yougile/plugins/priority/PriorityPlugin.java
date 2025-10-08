@@ -4,14 +4,12 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.github.patbattb.plugins.core.Plugin;
 import io.github.patbattb.plugins.core.expection.PluginCriticalException;
 import io.github.patbattb.plugins.core.expection.PluginInterruptedException;
-import io.github.patbattb.yougileapilib.domain.Task;
 
 import java.io.IOException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
 
 public class PriorityPlugin extends Plugin {
 
@@ -38,9 +36,8 @@ public class PriorityPlugin extends Plugin {
         TaskHandler handler = null;
         try (TaskHandler taskHandler = new TaskHandler(parameters)) {
             handler = taskHandler;
-            List<Task> taskList = taskHandler.getTaskList();
-            Map<Task, List<Task>> groupingTasks = taskHandler.groupTasks(taskList);
-            taskList = taskHandler.getTasksToUpdate(groupingTasks);
+            List<PriorityTask> taskList = taskHandler.getTaskList();
+            taskList = taskHandler.getTasksToUpdate(taskList);
             if (taskList != null && !taskList.isEmpty()) {
                 taskHandler.updateTasks(taskList);
             }

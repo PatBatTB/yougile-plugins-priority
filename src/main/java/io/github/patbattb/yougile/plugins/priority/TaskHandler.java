@@ -17,18 +17,11 @@ public class TaskHandler implements AutoCloseable {
         requestSender = new RequestSender(parameters.token(), parameters.requestCountPerMinute());
     }
 
-    List<Task> getTaskList() throws PluginCriticalException, PluginInterruptedException {
-        List<Task> taskList = new ArrayList<>();
+    List<PriorityTask> getTaskList() throws PluginCriticalException, PluginInterruptedException {
+        List<PriorityTask> taskList = new ArrayList<>();
         for (String columnId: parameters.columnIds()) {
             try {
-                taskList.addAll(requestSender.getTasks(columnId)
-                        .stream()
-                        .filter(task -> !task.isArchived() &&
-                                !task.isCompleted() &&
-                                !parameters.delayedState().equals(task.getStickers().get(parameters.priorityStickerId()))
-                        )
-                        .toList()
-                );
+                taskList.addAll(getTasks(columnId));
             } catch (PluginCriticalException e) {
                 requestSender.shutdown();
                 throw new PluginCriticalException(e);
@@ -40,9 +33,11 @@ public class TaskHandler implements AutoCloseable {
         return taskList;
     }
 
-    void updateTasks(List<Task> taskList) throws PluginCriticalException, PluginInterruptedException {
+    void updateTasks(List<PriorityTask> taskList) throws PluginCriticalException, PluginInterruptedException {
         try {
-            requestSender.updateTasks(taskList);
+            for (PriorityTask task: taskList) {
+                requestSender.updateTaskPriority(task.getId(), task.getStickers());
+            }
         } catch (PluginCriticalException e) {
             requestSender.shutdown();
             throw new PluginCriticalException(e);
@@ -52,33 +47,83 @@ public class TaskHandler implements AutoCloseable {
         }
     }
 
-    Map<Task, List<Task>> groupTasks(List<Task> taskList) throws PluginCriticalException, PluginInterruptedException {
-        Map<Task, List<Task>> taskMap = new HashMap<>();
-        for (Task task: taskList) {
-            if (task.getSubtasks() != null && !task.getSubtasks().isEmpty()) {
-                taskMap.put(task, pullSubtasks(task));
-            }
-        }
-        return taskMap;
+    List<PriorityTask> getTasksToUpdate(List<PriorityTask> taskList) {
+        return updatePriority(taskList, new ArrayList<>());
     }
 
-    List<Task> getTasksToUpdate(Map<Task, List<Task>> taskMap) {
-        List<Task> tasksToUpdate = new ArrayList<>();
-        for (Map.Entry<Task, List<Task>> entry: taskMap.entrySet()) {
-            Task parentTask = entry.getKey();
-            List<String> subtaskStates = entry.getValue().stream()
-                    .map(Task::getStickers)
+    private List<PriorityTask> updatePriority(List<PriorityTask> tasks, List<PriorityTask> tasksToUpdate) {
+        for (PriorityTask task: tasks) {
+            List<PriorityTask> subtasks = task.getSubtasks();
+            if (subtasks == null || subtasks.isEmpty()) {
+                return tasksToUpdate;
+            }
+            updatePriority(subtasks, tasksToUpdate);
+            List<String> subtaskStates = task.getSubtasks().stream()
+                    .map(PriorityTask::getStickers)
                     .map(elem -> elem.getOrDefault(parameters.priorityStickerId(), noState))
                     .toList();
             Optional<String> maxSubtaskStateOption = getMaxPriorityState(subtaskStates.toArray(String[]::new));
             String maxSubtaskState = maxSubtaskStateOption.orElse(noState);
-            String parentState = parentTask.getStickers().getOrDefault(parameters.priorityStickerId(), noState);
+            String parentState = task.getStickers().getOrDefault(parameters.priorityStickerId(), noState);
             if (!parentState.equals(maxSubtaskState)) {
-                parentTask.getStickers().put(parameters.priorityStickerId(), maxSubtaskState);
-                tasksToUpdate.add(parentTask);
+                task.getStickers().put(parameters.priorityStickerId(), maxSubtaskState);
+                tasksToUpdate.add(task);
             }
         }
         return tasksToUpdate;
+    }
+
+    private List<PriorityTask> getTasks(String columnId) throws PluginCriticalException, PluginInterruptedException {
+        List<PriorityTask> priorityTasks = new ArrayList<>();
+        List<Task> tasks = getTasksByColumnId(columnId);
+        for (Task task: tasks) {
+            PriorityTask priorityTask = new PriorityTask(task);
+            if (isActive(priorityTask)) {
+                priorityTask.getSubtasks().addAll(pullSubtasks(task.getSubtasks()));
+                priorityTasks.add(priorityTask);
+            }
+        }
+        return priorityTasks;
+    }
+
+    private List<Task> getTasksByColumnId(String columnId) throws PluginCriticalException, PluginInterruptedException {
+        try {
+            return requestSender.getTasks(columnId);
+        } catch (PluginCriticalException e) {
+            requestSender.shutdown();
+            throw new PluginCriticalException("Critical error during getting tasks.", e);
+        } catch (PluginInterruptedException e) {
+            requestSender.shutdown();
+            throw new PluginInterruptedException("Error during getting tasks.", e);
+        }
+    }
+
+    private Task getTaskById(String taskId) throws PluginInterruptedException, PluginCriticalException {
+        try {
+            return requestSender.getTask(taskId);
+        } catch (PluginInterruptedException e) {
+            requestSender.shutdown();
+            throw new PluginInterruptedException("Error in getting task by id.", e);
+        } catch (PluginCriticalException e) {
+            requestSender.shutdown();
+            throw new PluginCriticalException("Critical error in getting task by id.", e);
+        }
+    }
+
+    private List<PriorityTask> pullSubtasks(List<String> subtaskIds) throws PluginCriticalException, PluginInterruptedException {
+        List<PriorityTask> priorityTaskList = new ArrayList<>();
+        if (subtaskIds == null || subtaskIds.isEmpty()) {
+            return priorityTaskList;
+        }
+        for (String subtaskId: subtaskIds) {
+            Task subtask = getTaskById(subtaskId);
+            PriorityTask prioritySubTask = new PriorityTask(subtask);
+            if (isActive(prioritySubTask)) {
+                prioritySubTask.getSubtasks().addAll(pullSubtasks(subtask.getSubtasks()));
+                priorityTaskList.add(prioritySubTask);
+            }
+        }
+        return priorityTaskList;
     }
 
     private Optional<String> getMaxPriorityState(String... states) {
@@ -100,23 +145,9 @@ public class TaskHandler implements AutoCloseable {
         return two.get().order() - one.get().order();
     }
 
-    private List<Task> pullSubtasks(Task task) throws PluginInterruptedException, PluginCriticalException {
-        List<Task> taskList = new ArrayList<>();
-        for (String taskId: task.getSubtasks()) {
-            try {
-                Task subTask = requestSender.getTask(taskId);
-                if (!subTask.isArchived() && !subTask.isCompleted() && !subTask.isDeleted()) {
-                    taskList.add(subTask);
-                }
-            } catch (PluginInterruptedException e) {
-                requestSender.shutdown();
-                throw new PluginInterruptedException(e);
-            } catch (PluginCriticalException e) {
-                requestSender.shutdown();
-                throw new PluginCriticalException(e);
-            }
-        }
-        return taskList;
+    private boolean isActive(PriorityTask task) {
+        return !task.isArchived() && !task.isCompleted() &&
+                !parameters.delayedState().equals(task.getStickers().get(parameters.priorityStickerId()));
     }
 
     @Override

@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.*;
 
 public class RequestSender implements AutoCloseable {
@@ -51,11 +52,9 @@ public class RequestSender implements AutoCloseable {
         return taskList;
     }
 
-    void updateTasks(List<Task> tasks) throws PluginCriticalException, PluginInterruptedException {
-        for (Task task: tasks) {
-            TaskUpdateBody body = TaskUpdateBody.builder().stickers(task.getStickers()).build();
-            updateTaskSync(task.getId(), body);
-        }
+    void updateTaskPriority(String taskId, Map<String, String> stickers) throws PluginCriticalException, PluginInterruptedException {
+            TaskUpdateBody body = TaskUpdateBody.builder().stickers(stickers).build();
+            updateTaskSync(taskId, body);
     }
 
     public Task getTask(String taskId) throws PluginInterruptedException, PluginCriticalException {

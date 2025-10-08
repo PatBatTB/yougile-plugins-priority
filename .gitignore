@@ -4,6 +4,7 @@ target/
 !**/src/test/**/target/
 *.mvn
 priority.config.json
+src/main/java/io/github/patbattb/yougile/plugins/priority/Test.java
 
 ### IntelliJ IDEA ###
 .idea/
