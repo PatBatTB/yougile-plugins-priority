@@ -11,6 +11,8 @@ public class PriorityTask {
     private final String title;
     private final boolean completed;
     private final boolean archived;
+    private final boolean deleted;
+
     private final List<PriorityTask> subtasks;
     private final Map<String, String> stickers;
 
@@ -21,6 +23,7 @@ public class PriorityTask {
         this.archived = task.isArchived();
         this.stickers = task.getStickers();
         this.subtasks = new ArrayList<>();
+        this.deleted = task.isDeleted();
     }
 
     String getId() {
@@ -37,6 +40,10 @@ public class PriorityTask {
 
     Map<String, String> getStickers() {
         return stickers;
+    }
+
+    public boolean isDeleted() {
+        return deleted;
     }
 
     boolean isCompleted() {

@@ -55,7 +55,7 @@ public class TaskHandler implements AutoCloseable {
         for (PriorityTask task: tasks) {
             List<PriorityTask> subtasks = task.getSubtasks();
             if (subtasks == null || subtasks.isEmpty()) {
-                return tasksToUpdate;
+                continue;
             }
             updatePriority(subtasks, tasksToUpdate);
             List<String> subtaskStates = task.getSubtasks().stream()
@@ -146,7 +146,7 @@ public class TaskHandler implements AutoCloseable {
     }
 
     private boolean isActive(PriorityTask task) {
-        return !task.isArchived() && !task.isCompleted() &&
+        return !task.isDeleted() && !task.isArchived() && !task.isCompleted() &&
                 !parameters.delayedState().equals(task.getStickers().get(parameters.priorityStickerId()));
     }
 
