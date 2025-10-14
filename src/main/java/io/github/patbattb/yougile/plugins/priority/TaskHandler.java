@@ -54,17 +54,20 @@ public class TaskHandler implements AutoCloseable {
     private List<PriorityTask> updatePriority(List<PriorityTask> tasks, List<PriorityTask> tasksToUpdate) {
         for (PriorityTask task: tasks) {
             List<PriorityTask> subtasks = task.getSubtasks();
-            if (subtasks == null || subtasks.isEmpty()) {
+            if (!task.isParent()) {
                 continue;
             }
-            updatePriority(subtasks, tasksToUpdate);
-            List<String> subtaskStates = task.getSubtasks().stream()
+            if (subtasks != null && !subtasks.isEmpty()) {
+                updatePriority(subtasks, tasksToUpdate);
+            }
+
+            String parentState = task.getStickers().getOrDefault(parameters.priorityStickerId(), noState);
+            List<String> subtaskStates = subtasks == null ? Collections.emptyList() : subtasks.stream()
                     .map(PriorityTask::getStickers)
                     .map(elem -> elem.getOrDefault(parameters.priorityStickerId(), noState))
                     .toList();
             Optional<String> maxSubtaskStateOption = getMaxPriorityState(subtaskStates.toArray(String[]::new));
             String maxSubtaskState = maxSubtaskStateOption.orElse(noState);
-            String parentState = task.getStickers().getOrDefault(parameters.priorityStickerId(), noState);
             if (!parentState.equals(maxSubtaskState)) {
                 task.getStickers().put(parameters.priorityStickerId(), maxSubtaskState);
                 tasksToUpdate.add(task);
