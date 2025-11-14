@@ -13,6 +13,7 @@ import org.apache.http.conn.ConnectTimeoutException;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -64,7 +65,7 @@ public class RequestSender implements AutoCloseable {
                 executorService.submit(this::waitPause);
                 return taskService.getTaskById(taskId);
             }
-        } catch (InterruptedException | ClientProtocolException | ConnectTimeoutException e) {
+        } catch (InterruptedException | ClientProtocolException | ConnectTimeoutException | UnknownHostException e) {
             throw new PluginInterruptedException("Getting task by id was interrupted." ,e);
         } catch (URISyntaxException | IOException e) {
             throw new PluginCriticalException("Error during getting task by id", e);
@@ -78,8 +79,8 @@ public class RequestSender implements AutoCloseable {
                 executorService.submit(this::waitPause);
                 return taskService.getTaskList(qParams);
             }
-        } catch (InterruptedException | ClientProtocolException | ConnectTimeoutException e) {
-            throw new PluginInterruptedException("Getting tasks was interrupted." ,e);
+        } catch (InterruptedException | ClientProtocolException | ConnectTimeoutException | UnknownHostException e) {
+            throw new PluginInterruptedException("Getting tasks was interrupted.", e);
         } catch (URISyntaxException | IOException e) {
             throw new PluginCriticalException("Error during getting tasks", e);
         }
@@ -92,7 +93,7 @@ public class RequestSender implements AutoCloseable {
                 executorService.submit(this::waitPause);
                 taskService.updateTask(taskId, body);
             }
-        } catch (InterruptedException | ClientProtocolException | ConnectTimeoutException e) {
+        } catch (InterruptedException | ClientProtocolException | ConnectTimeoutException | UnknownHostException e) {
             throw new PluginInterruptedException("Getting tasks was interrupted." ,e);
         } catch (URISyntaxException | IOException e) {
             throw new PluginCriticalException("Error during getting tasks", e);
